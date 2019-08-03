@@ -1,5 +1,6 @@
 package com.willwinder.ugs.nbp.jog;
 
+import dev.rhoffman.cnc.joypadjog.LongPressMouseListener;
 import org.junit.Before;
 import org.junit.Test;
 

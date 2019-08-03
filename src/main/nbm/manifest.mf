@@ -2,4 +2,5 @@ Manifest-Version: 1.0
 OpenIDE-Module-Localizing-Bundle: resources/MessagesBundle.properties
 OpenIDE-Module-Java-Dependencies: Java > 1.8
 OpenIDE-Module-Specification-Version: ${ugs.modules.specification.version}
+OpenIDE-Module-Module-Dependencies: com.willwinder.ugs.platform.ugslib > 2.0.0
 AutoUpdate-Essential-Module: false
