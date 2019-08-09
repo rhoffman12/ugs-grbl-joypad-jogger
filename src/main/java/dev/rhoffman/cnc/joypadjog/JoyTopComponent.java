@@ -39,6 +39,7 @@ import com.willwinder.universalgcodesender.model.UnitUtils;
 import com.willwinder.universalgcodesender.services.JogService;
 import com.willwinder.universalgcodesender.types.GcodeCommand;
 import com.willwinder.universalgcodesender.utils.SwingHelpers;
+//import dev.rhoffman.gamepadevents.*;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.windows.TopComponent;
@@ -68,39 +69,26 @@ import javax.swing.JPopupMenu;
 @ActionReference(
         path = JoyTopComponent.WINOW_PATH)
 @TopComponent.OpenActionRegistration(
-        displayName = "Jog Controller",
+        displayName = "Joypad Jog Controller",
         preferredID = "JoyTopComponent"
 )
-public final class JoyTopComponent extends TopComponent implements UGSEventListener, ControllerListener, JoyPanelListener {
+public final class JoyTopComponent extends TopComponent
+        implements UGSEventListener, ControllerListener { //, JoyPanelListener, GamepadEventListener {
 
     public static final String WINOW_PATH = LocalizingService.MENU_WINDOW_PLUGIN;
     public static final String CATEGORY = LocalizingService.CATEGORY_WINDOW;
-    public static final String ACTION_ID = "com.willwinder.ugs.nbp.jog.JoyTopComponent";
-
-    /**
-     * The inteval in milliseconds to send jog commands to the controller when
-     * continuous jog is activated. This should be long enough so that the queue
-     * isn't filled up.
-     */
-    private static final int LONG_PRESS_JOG_INTERVAL = 500;
-
-    /**
-     * The step size for continuous jog commands. These should be long enough
-     * to keep the controller jogging before a new jog command is queued.
-     */
-    private static final double LONG_PRESS_MM_STEP_SIZE = 5;
-    private static final double LONG_PRESS_INCH_STEP_SIZE = 0.2;
+    public static final String ACTION_ID = "dev.rhoffman.cnc.joypadjog.JoyTopComponent";
 
     private final BackendAPI backend;
     private final JoyPanel joyPanel;
     private final JogService jogService;
     private static final ScheduledExecutorService EXECUTOR_SERVICE = Executors.newSingleThreadScheduledExecutor();
-    private ScheduledFuture<?> continuousJogSchedule;
+//    private GamepadMonitor gamepads;
 
     public JoyTopComponent() {
         backend = CentralLookup.getDefault().lookup(BackendAPI.class);
         jogService = CentralLookup.getDefault().lookup(JogService.class);
-        UseSeparateStepSizeAction action = Lookup.getDefault().lookup(UseSeparateStepSizeAction.class);
+//        gamepadInit();
 
         joyPanel = new JoyPanel();
         joyPanel.setEnabled(jogService.canJog());
@@ -109,7 +97,7 @@ public final class JoyTopComponent extends TopComponent implements UGSEventListe
         joyPanel.setStepSizeZ(jogService.getStepSizeZ());
         joyPanel.setUnit(jogService.getUnits());
         joyPanel.setUseStepSizeZ(jogService.useStepSizeZ());
-        joyPanel.addListener(this);
+//        joyPanel.addListener(this);
         
         backend.addUGSEventListener(this);
         backend.addControllerListener(this);
@@ -122,16 +110,21 @@ public final class JoyTopComponent extends TopComponent implements UGSEventListe
 
         add(joyPanel, BorderLayout.CENTER);
 
-        if (action != null) {
-            JPopupMenu popupMenu = new JPopupMenu();
-            popupMenu.add(action);
-            SwingHelpers.traverse(this, (comp) -> comp.setComponentPopupMenu(popupMenu));
-        }
     }
+
+//    private void gamepadInit() {
+//        if (gamepads!=null) gamepadShutdown();
+//        gamepads = new GamepadMonitor(); // TODO: configuration options
+//    }
+//
+//    private void gamepadShutdown() {
+//        if (gamepads!=null) gamepads.shutdown();
+//    }
 
     @Override
     protected void componentClosed() {
         super.componentClosed();
+//        gamepadShutdown();
         backend.removeUGSEventListener(this);
         backend.removeControllerListener(this);
     }
@@ -143,13 +136,13 @@ public final class JoyTopComponent extends TopComponent implements UGSEventListe
             joyPanel.setEnabled(canJog);
         }
 
-        if (event.isSettingChangeEvent()) {
-            joyPanel.setFeedRate(Double.valueOf(backend.getSettings().getJogFeedRate()).intValue());
-            joyPanel.setStepSizeXY(backend.getSettings().getManualModeStepSize());
-            joyPanel.setStepSizeZ(backend.getSettings().getzJogStepSize());
-            joyPanel.setUnit(backend.getSettings().getPreferredUnits());
-            joyPanel.setUseStepSizeZ(backend.getSettings().useZStepSize());
-        }
+//        if (event.isSettingChangeEvent()) {
+//            joyPanel.setFeedRate(Double.valueOf(backend.getSettings().getJogFeedRate()).intValue());
+//            joyPanel.setStepSizeXY(backend.getSettings().getManualModeStepSize());
+//            joyPanel.setStepSizeZ(backend.getSettings().getzJogStepSize());
+//            joyPanel.setUnit(backend.getSettings().getPreferredUnits());
+//            joyPanel.setUseStepSizeZ(backend.getSettings().useZStepSize());
+//        }
     }
 
     @Override
@@ -179,8 +172,7 @@ public final class JoyTopComponent extends TopComponent implements UGSEventListe
     @Override
     public void commandComplete(GcodeCommand command) {
         // If there is a command with an error, assume we are jogging and cancel any event
-        if (command.isError() && continuousJogSchedule != null) {
-            continuousJogSchedule.cancel(true);
+        if (command.isError()) {
             jogService.cancelJog();
         }
     }
@@ -200,62 +192,72 @@ public final class JoyTopComponent extends TopComponent implements UGSEventListe
 
     }
 
-    @Override
-    public void onButtonClicked(JoyPanelButtonEnum button) {
-        switch (button) {
-            case BUTTON_XNEG:
-                jogService.adjustManualLocationXY(-1, 0);
-                break;
-            case BUTTON_XPOS:
-                jogService.adjustManualLocationXY(1, 0);
-                break;
-            case BUTTON_YNEG:
-                jogService.adjustManualLocationXY(0, -1);
-                break;
-            case BUTTON_YPOS:
-                jogService.adjustManualLocationXY(0, 1);
-                break;
-            case BUTTON_DIAG_XNEG_YNEG:
-                jogService.adjustManualLocationXY(-1, -1);
-                break;
-            case BUTTON_DIAG_XNEG_YPOS:
-                jogService.adjustManualLocationXY(-1, 1);
-                break;
-            case BUTTON_DIAG_XPOS_YNEG:
-                jogService.adjustManualLocationXY(1, -1);
-                break;
-            case BUTTON_DIAG_XPOS_YPOS:
-                jogService.adjustManualLocationXY(1, 1);
-                break;
-            case BUTTON_ZNEG:
-                jogService.adjustManualLocationZ(-1);
-                break;
-            case BUTTON_ZPOS:
-                jogService.adjustManualLocationZ(1);
-                break;
-            case BUTTON_TOGGLE_UNIT:
-                if (jogService.getUnits() == UnitUtils.Units.MM) {
-                    jogService.setUnits(UnitUtils.Units.INCH);
-                } else {
-                    jogService.setUnits(UnitUtils.Units.MM);
-                }
-                break;
-            default:
-        }
-    }
+//    @Override
+//    public void onButtonClicked(JoyPanelButtonEnum button) {
+//        switch (button) {
+//            case BUTTON_XNEG:
+//                jogService.adjustManualLocationXY(-1, 0);
+//                break;
+//            case BUTTON_XPOS:
+//                jogService.adjustManualLocationXY(1, 0);
+//                break;
+//            case BUTTON_YNEG:
+//                jogService.adjustManualLocationXY(0, -1);
+//                break;
+//            case BUTTON_YPOS:
+//                jogService.adjustManualLocationXY(0, 1);
+//                break;
+//            case BUTTON_DIAG_XNEG_YNEG:
+//                jogService.adjustManualLocationXY(-1, -1);
+//                break;
+//            case BUTTON_DIAG_XNEG_YPOS:
+//                jogService.adjustManualLocationXY(-1, 1);
+//                break;
+//            case BUTTON_DIAG_XPOS_YNEG:
+//                jogService.adjustManualLocationXY(1, -1);
+//                break;
+//            case BUTTON_DIAG_XPOS_YPOS:
+//                jogService.adjustManualLocationXY(1, 1);
+//                break;
+//            case BUTTON_ZNEG:
+//                jogService.adjustManualLocationZ(-1);
+//                break;
+//            case BUTTON_ZPOS:
+//                jogService.adjustManualLocationZ(1);
+//                break;
+//            case BUTTON_TOGGLE_UNIT:
+//                if (jogService.getUnits() == UnitUtils.Units.MM) {
+//                    jogService.setUnits(UnitUtils.Units.INCH);
+//                } else {
+//                    jogService.setUnits(UnitUtils.Units.MM);
+//                }
+//                break;
+//            default:
+//        }
+//    }
+//
+//    @Override
+//    public void onStepSizeZChanged(double value) {
+//        jogService.setStepSizeZ(value);
+//    }
+//
+//    @Override
+//    public void onStepSizeXYChanged(double value) {
+//        jogService.setStepSizeXY(value);
+//    }
+//
+//    @Override
+//    public void onFeedRateChanged(int value) {
+//        jogService.setFeedRate(value);
+//    }
 
-    @Override
-    public void onStepSizeZChanged(double value) {
-        jogService.setStepSizeZ(value);
-    }
-
-    @Override
-    public void onStepSizeXYChanged(double value) {
-        jogService.setStepSizeXY(value);
-    }
-
-    @Override
-    public void onFeedRateChanged(int value) {
-        jogService.setFeedRate(value);
-    }
+//    @Override
+//    public void handleButtonEvent(ButtonEvent buttonEvent) {
+//
+//    }
+//
+//    @Override
+//    public void handleStickEvent(StickEvent stickEvent) {
+//
+//    }
 }

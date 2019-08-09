@@ -63,12 +63,6 @@ public class JoyPanel extends JPanel implements SteppedSizeManager.SteppedSizeCh
     private static final float FONT_SIZE_LABEL_LARGE = 14;
 
     /**
-     * How long should the jog button be pressed before continuous
-     * jog is activated. Given in milliseconds
-     */
-    private static final int LONG_PRESS_DELAY = 500;
-
-    /**
      * A list of listeners
      */
     private final Set<JoyPanelListener> listeners = new HashSet<>();
@@ -103,6 +97,7 @@ public class JoyPanel extends JPanel implements SteppedSizeManager.SteppedSizeCh
     }
 
     private void createComponents() {
+
         String fontPath = "/resources/";
         // https://www.fontsquirrel.com
         String fontName = "OpenSans-Regular.ttf";
@@ -110,16 +105,16 @@ public class JoyPanel extends JPanel implements SteppedSizeManager.SteppedSizeCh
         Font font = MachineStatusFontManager.createFont(is, fontName).deriveFont(Font.PLAIN, FONT_SIZE_LABEL_LARGE);
 
         // Create our buttons
-        buttons.put(JoyPanelButtonEnum.BUTTON_XPOS, createImageButton("icons/xpos.png", "X+", SwingConstants.CENTER, SwingConstants.LEFT));
-        buttons.put(JoyPanelButtonEnum.BUTTON_XNEG, createImageButton("icons/xneg.png", "X-", SwingConstants.CENTER, SwingConstants.RIGHT));
-        buttons.put(JoyPanelButtonEnum.BUTTON_YPOS, createImageButton("icons/ypos.png", "Y+", SwingConstants.BOTTOM, SwingConstants.CENTER));
-        buttons.put(JoyPanelButtonEnum.BUTTON_YNEG, createImageButton("icons/yneg.png", "Y-", SwingConstants.TOP, SwingConstants.CENTER));
-        buttons.put(JoyPanelButtonEnum.BUTTON_ZPOS, createImageButton("icons/ypos.png", "Z+", SwingConstants.BOTTOM, SwingConstants.CENTER));
-        buttons.put(JoyPanelButtonEnum.BUTTON_ZNEG, createImageButton("icons/yneg.png", "Z-", SwingConstants.TOP, SwingConstants.CENTER));
-        buttons.put(JoyPanelButtonEnum.BUTTON_DIAG_XPOS_YPOS, createImageButton("icons/diag-xpos-ypos.png"));
-        buttons.put(JoyPanelButtonEnum.BUTTON_DIAG_XNEG_YPOS, createImageButton("icons/diag-xneg-ypos.png"));
-        buttons.put(JoyPanelButtonEnum.BUTTON_DIAG_XPOS_YNEG, createImageButton("icons/diag-xpos-yneg.png"));
-        buttons.put(JoyPanelButtonEnum.BUTTON_DIAG_XNEG_YNEG, createImageButton("icons/diag-xneg-yneg.png"));
+//        buttons.put(JoyPanelButtonEnum.BUTTON_XPOS, createImageButton("icons/xpos.png", "X+", SwingConstants.CENTER, SwingConstants.LEFT));
+//        buttons.put(JoyPanelButtonEnum.BUTTON_XNEG, createImageButton("icons/xneg.png", "X-", SwingConstants.CENTER, SwingConstants.RIGHT));
+//        buttons.put(JoyPanelButtonEnum.BUTTON_YPOS, createImageButton("icons/ypos.png", "Y+", SwingConstants.BOTTOM, SwingConstants.CENTER));
+//        buttons.put(JoyPanelButtonEnum.BUTTON_YNEG, createImageButton("icons/yneg.png", "Y-", SwingConstants.TOP, SwingConstants.CENTER));
+//        buttons.put(JoyPanelButtonEnum.BUTTON_ZPOS, createImageButton("icons/ypos.png", "Z+", SwingConstants.BOTTOM, SwingConstants.CENTER));
+//        buttons.put(JoyPanelButtonEnum.BUTTON_ZNEG, createImageButton("icons/yneg.png", "Z-", SwingConstants.TOP, SwingConstants.CENTER));
+//        buttons.put(JoyPanelButtonEnum.BUTTON_DIAG_XPOS_YPOS, createImageButton("icons/diag-xpos-ypos.png"));
+//        buttons.put(JoyPanelButtonEnum.BUTTON_DIAG_XNEG_YPOS, createImageButton("icons/diag-xneg-ypos.png"));
+//        buttons.put(JoyPanelButtonEnum.BUTTON_DIAG_XPOS_YNEG, createImageButton("icons/diag-xpos-yneg.png"));
+//        buttons.put(JoyPanelButtonEnum.BUTTON_DIAG_XNEG_YNEG, createImageButton("icons/diag-xneg-yneg.png"));
 
         feedRateSpinner = new StepSizeSpinner();
         xyStepSizeSpinner = new StepSizeSpinner();
@@ -188,42 +183,42 @@ public class JoyPanel extends JPanel implements SteppedSizeManager.SteppedSizeCh
 
     private JPanel createConfigurationPanel() {
         JPanel configurationPanel = new JPanel();
-        configurationPanel.setLayout(new MigLayout("fill, inset 0, gap 2", "[55%, shrinkprio 100, right][20%, shrinkprio 100][25%, center, shrinkprio 0]", "[center][center][center]"));
-
-        configurationPanel.add(xyStepLabel, "growx");
-        configurationPanel.add(xyStepSizeSpinner, "growx");
-        configurationPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_TOGGLE_UNIT), "grow, spany, wrap");
-
-        configurationPanel.add(zStepLabel, "growx, hidemode 3");
-        configurationPanel.add(zStepSizeSpinner, "growx, hidemode 3, wrap");
-
-        configurationPanel.add(feedRateLabel, "growx");
-        configurationPanel.add(feedRateSpinner, "growx, wrap");
+//        configurationPanel.setLayout(new MigLayout("fill, inset 0, gap 2", "[55%, shrinkprio 100, right][20%, shrinkprio 100][25%, center, shrinkprio 0]", "[center][center][center]"));
+//
+//        configurationPanel.add(xyStepLabel, "growx");
+//        configurationPanel.add(xyStepSizeSpinner, "growx");
+//        configurationPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_TOGGLE_UNIT), "grow, spany, wrap");
+//
+//        configurationPanel.add(zStepLabel, "growx, hidemode 3");
+//        configurationPanel.add(zStepSizeSpinner, "growx, hidemode 3, wrap");
+//
+//        configurationPanel.add(feedRateLabel, "growx");
+//        configurationPanel.add(feedRateSpinner, "growx, wrap");
         return configurationPanel;
     }
 
     private JPanel createXYZPanel() {
         JPanel xyzPanel = new JPanel();
-        xyzPanel.setLayout(new MigLayout("fill, wrap 4, inset 0, gap 2", "[25%, center][25%, center][25%, center][25%, center]", "[33%, center][33%, center][33%, center]"));
-
-        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_DIAG_XNEG_YPOS), "grow");
-        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_YPOS), "grow");
-        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_DIAG_XPOS_YPOS), "grow");
-        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_ZPOS), "grow");
-
-        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_XNEG), "grow");
-        JPanel space = new JPanel();
-        space.setOpaque(false);
-        xyzPanel.add(space, "grow");
-        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_XPOS), "grow");
-        space = new JPanel();
-        space.setOpaque(false);
-        xyzPanel.add(space, "grow");
-
-        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_DIAG_XNEG_YNEG), "grow");
-        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_YNEG), "grow");
-        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_DIAG_XPOS_YNEG), "grow");
-        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_ZNEG), "grow");
+//        xyzPanel.setLayout(new MigLayout("fill, wrap 4, inset 0, gap 2", "[25%, center][25%, center][25%, center][25%, center]", "[33%, center][33%, center][33%, center]"));
+//
+//        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_DIAG_XNEG_YPOS), "grow");
+//        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_YPOS), "grow");
+//        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_DIAG_XPOS_YPOS), "grow");
+//        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_ZPOS), "grow");
+//
+//        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_XNEG), "grow");
+//        JPanel space = new JPanel();
+//        space.setOpaque(false);
+//        xyzPanel.add(space, "grow");
+//        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_XPOS), "grow");
+//        space = new JPanel();
+//        space.setOpaque(false);
+//        xyzPanel.add(space, "grow");
+//
+//        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_DIAG_XNEG_YNEG), "grow");
+//        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_YNEG), "grow");
+//        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_DIAG_XPOS_YNEG), "grow");
+//        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_ZNEG), "grow");
         return xyzPanel;
     }
 
