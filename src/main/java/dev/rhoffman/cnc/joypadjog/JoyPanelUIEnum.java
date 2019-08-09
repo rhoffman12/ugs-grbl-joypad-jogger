@@ -31,16 +31,8 @@ package dev.rhoffman.cnc.joypadjog;
  *
  * @author Joacim Breiler
  */
-public enum JoyPanelButtonEnum {
-    BUTTON_XPOS,
-    BUTTON_XNEG,
-    BUTTON_YPOS,
-    BUTTON_YNEG,
-    BUTTON_ZPOS,
-    BUTTON_ZNEG,
-    BUTTON_DIAG_XNEG_YNEG,
-    BUTTON_DIAG_XNEG_YPOS,
-    BUTTON_DIAG_XPOS_YNEG,
-    BUTTON_DIAG_XPOS_YPOS,
-    BUTTON_TOGGLE_UNIT
+public enum JoyPanelUIEnum {
+    BUTTON_JOYPAD_SEARCH,
+    LABEL_CONNECTION_STATE,
+
 }

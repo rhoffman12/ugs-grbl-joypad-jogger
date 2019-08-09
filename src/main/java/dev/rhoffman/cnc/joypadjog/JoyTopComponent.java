@@ -39,7 +39,7 @@ import com.willwinder.universalgcodesender.model.UnitUtils;
 import com.willwinder.universalgcodesender.services.JogService;
 import com.willwinder.universalgcodesender.types.GcodeCommand;
 import com.willwinder.universalgcodesender.utils.SwingHelpers;
-//import dev.rhoffman.gamepadevents.*;
+import dev.rhoffman.gamepadevents.*;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.windows.TopComponent;
@@ -50,6 +50,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.*;
 import javax.swing.JPopupMenu;
 
 /**
@@ -69,11 +70,11 @@ import javax.swing.JPopupMenu;
 @ActionReference(
         path = JoyTopComponent.WINOW_PATH)
 @TopComponent.OpenActionRegistration(
-        displayName = "Joypad Jog Controller",
+        displayName = "Joypad Jogger",
         preferredID = "JoyTopComponent"
 )
 public final class JoyTopComponent extends TopComponent
-        implements UGSEventListener, ControllerListener { //, JoyPanelListener, GamepadEventListener {
+        implements UGSEventListener, ControllerListener, JoyPanelListener, GamepadEventListener {
 
     public static final String WINOW_PATH = LocalizingService.MENU_WINDOW_PLUGIN;
     public static final String CATEGORY = LocalizingService.CATEGORY_WINDOW;
@@ -83,28 +84,29 @@ public final class JoyTopComponent extends TopComponent
     private final JoyPanel joyPanel;
     private final JogService jogService;
     private static final ScheduledExecutorService EXECUTOR_SERVICE = Executors.newSingleThreadScheduledExecutor();
-//    private GamepadMonitor gamepads;
+    private GamepadMonitor gamepads;
+
+    private final Logger logger = Logger.getLogger(this.getClass().getName());
 
     public JoyTopComponent() {
+
+        logger.log(Level.INFO, "Starting Joypad Jooger");
         backend = CentralLookup.getDefault().lookup(BackendAPI.class);
         jogService = CentralLookup.getDefault().lookup(JogService.class);
-//        gamepadInit();
 
         joyPanel = new JoyPanel();
         joyPanel.setEnabled(jogService.canJog());
-        joyPanel.setFeedRate(Double.valueOf(jogService.getFeedRate()).intValue());
-        joyPanel.setStepSizeXY(jogService.getStepSizeXY());
-        joyPanel.setStepSizeZ(jogService.getStepSizeZ());
-        joyPanel.setUnit(jogService.getUnits());
-        joyPanel.setUseStepSizeZ(jogService.useStepSizeZ());
-//        joyPanel.addListener(this);
+//        joyPanel.setFeedRate(Double.valueOf(jogService.getFeedRate()).intValue());
+//        joyPanel.setStepSizeXY(jogService.getStepSizeXY());
+//        joyPanel.setStepSizeZ(jogService.getStepSizeZ());
+//        joyPanel.setUseStepSizeZ(jogService.useStepSizeZ());
+        joyPanel.addListener(this);
         
         backend.addUGSEventListener(this);
         backend.addControllerListener(this);
 
         setLayout(new BorderLayout());
-        setName(LocalizingService.JogControlTitle);
-        setToolTipText(LocalizingService.JogControlTooltip);
+        setName("Joypad Jogger");
 
         setPreferredSize(new Dimension(250, 270));
 
@@ -112,19 +114,20 @@ public final class JoyTopComponent extends TopComponent
 
     }
 
-//    private void gamepadInit() {
-//        if (gamepads!=null) gamepadShutdown();
-//        gamepads = new GamepadMonitor(); // TODO: configuration options
-//    }
-//
-//    private void gamepadShutdown() {
-//        if (gamepads!=null) gamepads.shutdown();
-//    }
+    private void gamepadInit() {
+        if (gamepads!=null) gamepadShutdown();
+        gamepads = new GamepadMonitor(); // TODO: configuration options
+        gamepads.subscribe(this);
+    }
+
+    private void gamepadShutdown() {
+        if (gamepads!=null) gamepads.shutdown();
+    }
 
     @Override
     protected void componentClosed() {
         super.componentClosed();
-//        gamepadShutdown();
+        gamepadShutdown();
         backend.removeUGSEventListener(this);
         backend.removeControllerListener(this);
     }
@@ -192,8 +195,17 @@ public final class JoyTopComponent extends TopComponent
 
     }
 
-//    @Override
-//    public void onButtonClicked(JoyPanelButtonEnum button) {
+    @Override
+    public void onButtonClicked(JoyPanelUIEnum button) {
+        logger.log(Level.INFO, "TopComponent received a click");
+        switch (button) {
+            case BUTTON_JOYPAD_SEARCH:
+                if (gamepads!=null && gamepads.isConnected()) gamepadShutdown();
+                gamepadInit();
+                break;
+            default:
+        }
+    }
 //        switch (button) {
 //            case BUTTON_XNEG:
 //                jogService.adjustManualLocationXY(-1, 0);
@@ -234,7 +246,6 @@ public final class JoyTopComponent extends TopComponent
 //                break;
 //            default:
 //        }
-//    }
 //
 //    @Override
 //    public void onStepSizeZChanged(double value) {
@@ -251,13 +262,18 @@ public final class JoyTopComponent extends TopComponent
 //        jogService.setFeedRate(value);
 //    }
 
-//    @Override
-//    public void handleButtonEvent(ButtonEvent buttonEvent) {
-//
-//    }
-//
-//    @Override
-//    public void handleStickEvent(StickEvent stickEvent) {
-//
-//    }
+    @Override
+    public void handleButtonEvent(ButtonEvent buttonEvent) {
+
+    }
+
+    @Override
+    public void handleStickEvent(StickEvent stickEvent) {
+
+    }
+
+    @Override
+    public void handleConnectionEvent(ConnectionEvent connectionEvent) {
+        joyPanel.setConnectionLabel(connectionEvent.type);
+    }
 }

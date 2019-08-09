@@ -28,12 +28,9 @@ package dev.rhoffman.cnc.joypadjog;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.willwinder.universalgcodesender.i18n.Localization;
-import com.willwinder.universalgcodesender.model.UnitUtils;
 import com.willwinder.universalgcodesender.uielements.helpers.MachineStatusFontManager;
 import com.willwinder.universalgcodesender.uielements.helpers.SteppedSizeManager;
-import com.willwinder.universalgcodesender.uielements.helpers.ThemeColors;
-import com.willwinder.universalgcodesender.uielements.jog.StepSizeSpinner;
+import dev.rhoffman.gamepadevents.ConnectionEvent;
 import net.miginfocom.swing.MigLayout;
 import org.openide.util.ImageUtilities;
 
@@ -42,8 +39,10 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.io.InputStream;
 import java.util.HashSet;
+import java.util.logging.*;
 import java.util.Set;
 
 /**
@@ -68,23 +67,19 @@ public class JoyPanel extends JPanel implements SteppedSizeManager.SteppedSizeCh
     private final Set<JoyPanelListener> listeners = new HashSet<>();
 
     /**
-     * A map with all buttons that allows bi-directional lookups with key->value and value->key
+     * A map with all buttons and labels that allows bi-directional lookups with key->value and value->key
      */
-    private final BiMap<JoyPanelButtonEnum, JButton> buttons = HashBiMap.create();
+    private final BiMap<JoyPanelUIEnum, JButton> buttons = HashBiMap.create();
+    private final BiMap<JoyPanelUIEnum, JLabel> labels = HashBiMap.create();
 
-    /**
-     * Labels
-     */
-    private JLabel feedRateLabel;
-    private JLabel xyStepLabel;
-    private JLabel zStepLabel;
+    private final Logger logger = Logger.getLogger(this.getClass().getName());
 
-    /**
-     * Spinners for jog settings
-     */
-    private StepSizeSpinner zStepSizeSpinner;
-    private StepSizeSpinner feedRateSpinner;
-    private StepSizeSpinner xyStepSizeSpinner;
+//    /**
+//     * Spinners for jog settings
+//     */
+//    private StepSizeSpinner zStepSizeSpinner;
+//    private StepSizeSpinner feedRateSpinner;
+//    private StepSizeSpinner xyStepSizeSpinner;
 
     public JoyPanel() {
         createComponents();
@@ -104,39 +99,9 @@ public class JoyPanel extends JPanel implements SteppedSizeManager.SteppedSizeCh
         InputStream is = getClass().getResourceAsStream(fontPath + fontName);
         Font font = MachineStatusFontManager.createFont(is, fontName).deriveFont(Font.PLAIN, FONT_SIZE_LABEL_LARGE);
 
-        // Create our buttons
-//        buttons.put(JoyPanelButtonEnum.BUTTON_XPOS, createImageButton("icons/xpos.png", "X+", SwingConstants.CENTER, SwingConstants.LEFT));
-//        buttons.put(JoyPanelButtonEnum.BUTTON_XNEG, createImageButton("icons/xneg.png", "X-", SwingConstants.CENTER, SwingConstants.RIGHT));
-//        buttons.put(JoyPanelButtonEnum.BUTTON_YPOS, createImageButton("icons/ypos.png", "Y+", SwingConstants.BOTTOM, SwingConstants.CENTER));
-//        buttons.put(JoyPanelButtonEnum.BUTTON_YNEG, createImageButton("icons/yneg.png", "Y-", SwingConstants.TOP, SwingConstants.CENTER));
-//        buttons.put(JoyPanelButtonEnum.BUTTON_ZPOS, createImageButton("icons/ypos.png", "Z+", SwingConstants.BOTTOM, SwingConstants.CENTER));
-//        buttons.put(JoyPanelButtonEnum.BUTTON_ZNEG, createImageButton("icons/yneg.png", "Z-", SwingConstants.TOP, SwingConstants.CENTER));
-//        buttons.put(JoyPanelButtonEnum.BUTTON_DIAG_XPOS_YPOS, createImageButton("icons/diag-xpos-ypos.png"));
-//        buttons.put(JoyPanelButtonEnum.BUTTON_DIAG_XNEG_YPOS, createImageButton("icons/diag-xneg-ypos.png"));
-//        buttons.put(JoyPanelButtonEnum.BUTTON_DIAG_XPOS_YNEG, createImageButton("icons/diag-xpos-yneg.png"));
-//        buttons.put(JoyPanelButtonEnum.BUTTON_DIAG_XNEG_YNEG, createImageButton("icons/diag-xneg-yneg.png"));
+        buttons.put(JoyPanelUIEnum.BUTTON_JOYPAD_SEARCH, new JButton("Search for Joypad"));
+        labels.put(JoyPanelUIEnum.LABEL_CONNECTION_STATE, new JLabel("Not connected " + java.time.LocalTime.now().toString()));
 
-        feedRateSpinner = new StepSizeSpinner();
-        xyStepSizeSpinner = new StepSizeSpinner();
-        zStepSizeSpinner = new StepSizeSpinner();
-
-        // todo: could use a number of factory methods here to build similar stuff
-        feedRateLabel = createSettingLabel(font, Localization.getString("platform.plugin.jog.feedRate").toUpperCase());
-        xyStepLabel = createSettingLabel(font, Localization.getString("platform.plugin.jog.stepSizeXY").toUpperCase());
-        zStepLabel = createSettingLabel(font, Localization.getString("platform.plugin.jog.stepSizeZ").toUpperCase());
-
-        JButton unitToggleButton = new JButton("--");
-        unitToggleButton.setMinimumSize(new Dimension(MINIMUM_BUTTON_SIZE, MINIMUM_BUTTON_SIZE));
-        unitToggleButton.setFocusable(false);
-        buttons.put(JoyPanelButtonEnum.BUTTON_TOGGLE_UNIT, unitToggleButton);
-
-        if (isDarkLaF()) {
-            buttons.values().forEach(button -> setForeground(ThemeColors.LIGHT_BLUE));
-            feedRateLabel.setForeground(ThemeColors.ORANGE);
-            xyStepLabel.setForeground(ThemeColors.ORANGE);
-            zStepLabel.setForeground(ThemeColors.ORANGE);
-            unitToggleButton.setForeground(ThemeColors.LIGHT_BLUE);
-        }
     }
 
     private JLabel createSettingLabel(Font font, String text) {
@@ -147,79 +112,54 @@ public class JoyPanel extends JPanel implements SteppedSizeManager.SteppedSizeCh
         return label;
     }
 
-    public void setFeedRate(int feedRate) {
-        feedRateSpinner.setValue(String.valueOf(feedRate));
-    }
+//    public void setFeedRate(int feedRate) {
+//        feedRateSpinner.setValue(String.valueOf(feedRate));
+//    }
+//
+//    public void setStepSizeXY(double stepSize) {
+//        xyStepSizeSpinner.setValue(stepSize);
+//    }
+//
+//    public void setStepSizeZ(double stepSize) {
+//        zStepSizeSpinner.setValue(stepSize);
+//    }
+//
+//    public void setUnit(UnitUtils.Units unit) {
+//        getButtonFromEnum(JoyPanelButtonEnum.BUTTON_TOGGLE_UNIT).setText(unit.name());
+//    }
 
-    public void setStepSizeXY(double stepSize) {
-        xyStepSizeSpinner.setValue(stepSize);
-    }
-
-    public void setStepSizeZ(double stepSize) {
-        zStepSizeSpinner.setValue(stepSize);
-    }
-
-    public void setUnit(UnitUtils.Units unit) {
-        getButtonFromEnum(JoyPanelButtonEnum.BUTTON_TOGGLE_UNIT).setText(unit.name());
-    }
-
-    public void setUseStepSizeZ(boolean useStepSizeZ) {
-        if (useStepSizeZ) {
-            zStepLabel.setVisible(true);
-            zStepSizeSpinner.setVisible(true);
-            xyStepLabel.setText(Localization.getString("platform.plugin.jog.stepSizeXY").toUpperCase());
-        } else {
-            zStepLabel.setVisible(false);
-            zStepSizeSpinner.setVisible(false);
-            xyStepLabel.setText(Localization.getString("platform.plugin.jog.stepSize").toUpperCase());
-        }
-    }
+//    public void setUseStepSizeZ(boolean useStepSizeZ) {
+//        if (useStepSizeZ) {
+//            // zStepLabel.setVisible(true);
+//            zStepSizeSpinner.setVisible(true);
+//            // xyStepLabel.setText(Localization.getString("platform.plugin.jog.stepSizeXY").toUpperCase());
+//        } else {
+//            // zStepLabel.setVisible(false);
+//            zStepSizeSpinner.setVisible(false);
+//            // xyStepLabel.setText(Localization.getString("platform.plugin.jog.stepSize").toUpperCase());
+//        }
+//    }
 
     private void initPanels() {
         setLayout(new MigLayout("fill, inset 5, gap 7"));
-        add(createXYZPanel(), "grow, wrap");
-        add(createConfigurationPanel(), "grow");
+        add(createConfigurationPanel(), "grow, wrap");
     }
 
     private JPanel createConfigurationPanel() {
         JPanel configurationPanel = new JPanel();
-//        configurationPanel.setLayout(new MigLayout("fill, inset 0, gap 2", "[55%, shrinkprio 100, right][20%, shrinkprio 100][25%, center, shrinkprio 0]", "[center][center][center]"));
-//
-//        configurationPanel.add(xyStepLabel, "growx");
-//        configurationPanel.add(xyStepSizeSpinner, "growx");
-//        configurationPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_TOGGLE_UNIT), "grow, spany, wrap");
-//
-//        configurationPanel.add(zStepLabel, "growx, hidemode 3");
-//        configurationPanel.add(zStepSizeSpinner, "growx, hidemode 3, wrap");
-//
-//        configurationPanel.add(feedRateLabel, "growx");
-//        configurationPanel.add(feedRateSpinner, "growx, wrap");
+
+        configurationPanel.add(buttons.get(JoyPanelUIEnum.BUTTON_JOYPAD_SEARCH));
+        configurationPanel.add(labels.get(JoyPanelUIEnum.LABEL_CONNECTION_STATE), "growx, wrap");
+
         return configurationPanel;
     }
 
-    private JPanel createXYZPanel() {
-        JPanel xyzPanel = new JPanel();
-//        xyzPanel.setLayout(new MigLayout("fill, wrap 4, inset 0, gap 2", "[25%, center][25%, center][25%, center][25%, center]", "[33%, center][33%, center][33%, center]"));
-//
-//        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_DIAG_XNEG_YPOS), "grow");
-//        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_YPOS), "grow");
-//        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_DIAG_XPOS_YPOS), "grow");
-//        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_ZPOS), "grow");
-//
-//        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_XNEG), "grow");
-//        JPanel space = new JPanel();
-//        space.setOpaque(false);
-//        xyzPanel.add(space, "grow");
-//        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_XPOS), "grow");
-//        space = new JPanel();
-//        space.setOpaque(false);
-//        xyzPanel.add(space, "grow");
-//
-//        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_DIAG_XNEG_YNEG), "grow");
-//        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_YNEG), "grow");
-//        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_DIAG_XPOS_YNEG), "grow");
-//        xyzPanel.add(getButtonFromEnum(JoyPanelButtonEnum.BUTTON_ZNEG), "grow");
-        return xyzPanel;
+    private JPanel createInfoPanel() {
+        JPanel infoPanel = new JPanel();
+
+
+
+        return infoPanel;
     }
 
 
@@ -232,9 +172,42 @@ public class JoyPanel extends JPanel implements SteppedSizeManager.SteppedSizeCh
         );
         sizer.addListener(this);
 
-        xyStepSizeSpinner.addChangeListener(this);
-        zStepSizeSpinner.addChangeListener(this);
-        feedRateSpinner.addChangeListener(this);
+        MouseListener mouseListener = new MouseListener() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                logger.log(Level.INFO, "Mouse click event from " + getButtonEnumFromMouseEvent(e).toString());
+                if(!SwingUtilities.isLeftMouseButton(e)) {
+                    return; // ignore RMB
+                }
+                JoyPanelUIEnum buttonEnum = getButtonEnumFromMouseEvent(e);
+                listeners.forEach(a -> a.onButtonClicked(buttonEnum));
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+
+            }
+        };
+        buttons.values().forEach(b -> b.addMouseListener(mouseListener));
+
+//        xyStepSizeSpinner.addChangeListener(this);
+//        zStepSizeSpinner.addChangeListener(this);
+//        feedRateSpinner.addChangeListener(this);
     }
 
     /**
@@ -243,7 +216,7 @@ public class JoyPanel extends JPanel implements SteppedSizeManager.SteppedSizeCh
      * @param mouseEvent the event that we want to extract the button enum from
      * @return the enum for the button
      */
-    private JoyPanelButtonEnum getButtonEnumFromMouseEvent(MouseEvent mouseEvent) {
+    private JoyPanelUIEnum getButtonEnumFromMouseEvent(MouseEvent mouseEvent) {
         JButton releasedButton = (JButton) mouseEvent.getSource();
         return buttons.inverse().get(releasedButton);
     }
@@ -254,8 +227,12 @@ public class JoyPanel extends JPanel implements SteppedSizeManager.SteppedSizeCh
      * @param buttonEnum the button enum
      * @return the button
      */
-    private JButton getButtonFromEnum(JoyPanelButtonEnum buttonEnum) {
-        return buttons.get(buttonEnum);
+    private JButton getButtonFromEnum(JoyPanelUIEnum buttonEnum) throws Exception {
+        if (buttons.get(buttonEnum) != null) {
+            return buttons.get(buttonEnum);
+        } else {
+            throw new Exception("that isn't a button!");
+        }
     }
 
 
@@ -307,15 +284,15 @@ public class JoyPanel extends JPanel implements SteppedSizeManager.SteppedSizeCh
     @Override
     public void setEnabled(boolean enabled) {
         super.setEnabled(enabled);
-        buttons.values().forEach(button -> button.setEnabled(enabled));
-
-        xyStepSizeSpinner.setEnabled(enabled);
-        zStepSizeSpinner.setEnabled(enabled);
-        feedRateSpinner.setEnabled(enabled);
-
-        xyStepLabel.setEnabled(enabled);
-        zStepLabel.setEnabled(enabled);
-        feedRateLabel.setEnabled(enabled);
+//        buttons.values().forEach(button -> button.setEnabled(enabled));
+//
+//        xyStepSizeSpinner.setEnabled(enabled);
+//        zStepSizeSpinner.setEnabled(enabled);
+//        feedRateSpinner.setEnabled(enabled);
+//
+//        xyStepLabel.setEnabled(enabled);
+//        zStepLabel.setEnabled(enabled);
+//        feedRateLabel.setEnabled(enabled);
     }
 
     @Override
@@ -334,48 +311,48 @@ public class JoyPanel extends JPanel implements SteppedSizeManager.SteppedSizeCh
     }
 
     private void setFontSizeExtraSmall() {
-        JButton unitToggleButton = getButtonFromEnum(JoyPanelButtonEnum.BUTTON_TOGGLE_UNIT);
-        Font font = unitToggleButton.getFont().deriveFont(FONT_SIZE_LABEL_MEDIUM);
-        unitToggleButton.setFont(font);
-
-        font = this.feedRateLabel.getFont().deriveFont(FONT_SIZE_LABEL_SMALL);
-        this.feedRateLabel.setFont(font);
-
-        font = this.xyStepLabel.getFont().deriveFont(FONT_SIZE_LABEL_SMALL);
-        this.xyStepLabel.setFont(font);
-
-        font = this.zStepLabel.getFont().deriveFont(FONT_SIZE_LABEL_SMALL);
-        this.zStepLabel.setFont(font);
+//        JButton unitToggleButton = getButtonFromEnum(JoyPanelUIEnum.BUTTON_TOGGLE_UNIT);
+//        Font font = unitToggleButton.getFont().deriveFont(FONT_SIZE_LABEL_MEDIUM);
+//        unitToggleButton.setFont(font);
+//
+//        font = this.feedRateLabel.getFont().deriveFont(FONT_SIZE_LABEL_SMALL);
+//        this.feedRateLabel.setFont(font);
+//
+//        font = this.xyStepLabel.getFont().deriveFont(FONT_SIZE_LABEL_SMALL);
+//        this.xyStepLabel.setFont(font);
+//
+//        font = this.zStepLabel.getFont().deriveFont(FONT_SIZE_LABEL_SMALL);
+//        this.zStepLabel.setFont(font);
     }
 
     private void setFontSizeSmall() {
-        JButton unitToggleButton = getButtonFromEnum(JoyPanelButtonEnum.BUTTON_TOGGLE_UNIT);
-        Font font = unitToggleButton.getFont().deriveFont(FONT_SIZE_LABEL_MEDIUM);
-        unitToggleButton.setFont(font);
-
-        font = this.feedRateLabel.getFont().deriveFont(FONT_SIZE_LABEL_MEDIUM);
-        this.feedRateLabel.setFont(font);
-
-        font = this.xyStepLabel.getFont().deriveFont(FONT_SIZE_LABEL_MEDIUM);
-        this.xyStepLabel.setFont(font);
-
-        font = this.zStepLabel.getFont().deriveFont(FONT_SIZE_LABEL_MEDIUM);
-        this.zStepLabel.setFont(font);
+//        JButton unitToggleButton = getButtonFromEnum(JoyPanelUIEnum.BUTTON_TOGGLE_UNIT);
+//        Font font = unitToggleButton.getFont().deriveFont(FONT_SIZE_LABEL_MEDIUM);
+//        unitToggleButton.setFont(font);
+//
+//        font = this.feedRateLabel.getFont().deriveFont(FONT_SIZE_LABEL_MEDIUM);
+//        this.feedRateLabel.setFont(font);
+//
+//        font = this.xyStepLabel.getFont().deriveFont(FONT_SIZE_LABEL_MEDIUM);
+//        this.xyStepLabel.setFont(font);
+//
+//        font = this.zStepLabel.getFont().deriveFont(FONT_SIZE_LABEL_MEDIUM);
+//        this.zStepLabel.setFont(font);
     }
 
     private void setFontSizeNormal() {
-        JButton unitToggleButton = getButtonFromEnum(JoyPanelButtonEnum.BUTTON_TOGGLE_UNIT);
-        Font font = unitToggleButton.getFont().deriveFont(FONT_SIZE_LABEL_MEDIUM);
-        unitToggleButton.setFont(font);
-
-        font = this.feedRateLabel.getFont().deriveFont(FONT_SIZE_LABEL_LARGE);
-        this.feedRateLabel.setFont(font);
-
-        font = this.xyStepLabel.getFont().deriveFont(FONT_SIZE_LABEL_LARGE);
-        this.xyStepLabel.setFont(font);
-
-        font = this.zStepLabel.getFont().deriveFont(FONT_SIZE_LABEL_LARGE);
-        this.zStepLabel.setFont(font);
+//        JButton unitToggleButton = getButtonFromEnum(JoyPanelUIEnum.BUTTON_TOGGLE_UNIT);
+//        Font font = unitToggleButton.getFont().deriveFont(FONT_SIZE_LABEL_MEDIUM);
+//        unitToggleButton.setFont(font);
+//
+//        font = this.feedRateLabel.getFont().deriveFont(FONT_SIZE_LABEL_LARGE);
+//        this.feedRateLabel.setFont(font);
+//
+//        font = this.xyStepLabel.getFont().deriveFont(FONT_SIZE_LABEL_LARGE);
+//        this.xyStepLabel.setFont(font);
+//
+//        font = this.zStepLabel.getFont().deriveFont(FONT_SIZE_LABEL_LARGE);
+//        this.zStepLabel.setFont(font);
     }
 
     public void addListener(JoyPanelListener listener) {
@@ -384,12 +361,23 @@ public class JoyPanel extends JPanel implements SteppedSizeManager.SteppedSizeCh
 
     @Override
     public void stateChanged(ChangeEvent e) {
-        if (e.getSource() == zStepSizeSpinner) {
-            this.listeners.forEach(listener -> listener.onStepSizeZChanged(zStepSizeSpinner.getValue()));
-        } else if (e.getSource() == xyStepSizeSpinner) {
-            this.listeners.forEach(listener -> listener.onStepSizeXYChanged(xyStepSizeSpinner.getValue()));
-        } else if (e.getSource() == feedRateSpinner) {
-            this.listeners.forEach(listener -> listener.onFeedRateChanged(feedRateSpinner.getValue().intValue()));
+//        if (e.getSource() == zStepSizeSpinner) {
+//            this.listeners.forEach(listener -> listener.onStepSizeZChanged(zStepSizeSpinner.getValue()));
+//        } else if (e.getSource() == xyStepSizeSpinner) {
+//            this.listeners.forEach(listener -> listener.onStepSizeXYChanged(xyStepSizeSpinner.getValue()));
+//        } else if (e.getSource() == feedRateSpinner) {
+//            this.listeners.forEach(listener -> listener.onFeedRateChanged(feedRateSpinner.getValue().intValue()));
+//        }
+    }
+
+    public void setConnectionLabel(ConnectionEvent.Type type) {
+        switch (type) {
+            case CONNECTED:
+                labels.get(JoyPanelUIEnum.LABEL_CONNECTION_STATE).setText("Connected");
+                break;
+            case DISCONNECTED:
+                labels.get(JoyPanelUIEnum.LABEL_CONNECTION_STATE).setText("DISCONNECTED!");
+                break;
         }
     }
 }

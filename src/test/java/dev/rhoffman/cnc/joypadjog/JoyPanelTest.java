@@ -48,10 +48,6 @@ public class JoyPanelTest extends JFrame {
 
         setVisible(true);
 
-        joyPanel.setFeedRate(1000);
-        joyPanel.setStepSizeXY(100);
-        joyPanel.setStepSizeZ(0.01);
-
         setMinimumSize(joyPanel.getMinimumSize());
     }
 
@@ -66,14 +62,6 @@ public class JoyPanelTest extends JFrame {
 
         menuItem = new JMenuItem("Disabled");
         menuItem.addActionListener(e -> joyPanel.setEnabled(false));
-        fileMenu.add(menuItem);
-
-        menuItem = new JMenuItem("Use Z step size");
-        menuItem.addActionListener(e -> joyPanel.setUseStepSizeZ(true));
-        fileMenu.add(menuItem);
-
-        menuItem = new JMenuItem("Don't use Z step size");
-        menuItem.addActionListener(e -> joyPanel.setUseStepSizeZ(false));
         fileMenu.add(menuItem);
 
         setJMenuBar(menuBar);

@@ -39,26 +39,6 @@ public interface JoyPanelListener {
      *
      * @param button the enum for the button
      */
-    void onButtonClicked(JoyPanelButtonEnum button);
+    void onButtonClicked(JoyPanelUIEnum button);
 
-    /**
-     * Is called when the step size of the Z-axis is changed
-     *
-     * @param value the step size
-     */
-    void onStepSizeZChanged(double value);
-
-    /**
-     * Is called when the step size of the XY-axis is changed
-     *
-     * @param value the step size
-     */
-    void onStepSizeXYChanged(double value);
-
-    /**
-     * Is called when the feed rate is changed
-     *
-     * @param value the feed rate
-     */
-    void onFeedRateChanged(int value);
 }
